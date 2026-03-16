@@ -6,7 +6,7 @@ import (
 )
 
 func main() {
-	d := dlist.New()
+	d := dlist.New[int]()
 	fmt.Println("len after init", d.Len())
 	d.Append(1)
 	d.Append(2)
@@ -36,8 +36,13 @@ func main() {
 		fmt.Println("el:", i)
 	}
 
-	d.Insert(0, 10)
-	d.Insert(d.Len(), 5)
+	if err := d.Insert(0, 10); err != nil {
+		fmt.Println(err)
+	}
+
+	if err := d.Insert(d.Len(), 5); err != nil {
+		fmt.Println(err)
+	}
 
 	ch = d.Iterator()
 	for i := range ch {

@@ -1,93 +1,94 @@
 package dlist
 
-type DoubleLinkedList struct {
-	firstNode *Node
-	lastNode  *Node
-	length    int
+import (
+	"errors"
+)
+
+type DoubleLinkedList[T comparable] struct {
+	head *Node[T]
+	tail *Node[T]
+	len  int
 }
 
-func (d *DoubleLinkedList) Append(value any) {
+var ErrIndexOutOfRange = errors.New("index out of range")
 
-	if d.firstNode == nil && d.lastNode == nil {
-		d.firstNode = &Node{
-			Value: value,
-			Prev:  nil,
-			Next:  nil,
-		}
-		d.lastNode = d.firstNode
-		d.length++
+func (d *DoubleLinkedList[T]) initFirst(value T) {
+	n := &Node[T]{Value: value}
+	d.head = n
+	d.tail = n
+	d.len = 1
+}
+
+func (d *DoubleLinkedList[T]) Append(value T) {
+
+	if d.head == nil && d.tail == nil {
+		d.initFirst(value)
 		return
 	}
 
-	d.lastNode.Next = &Node{
+	n := &Node[T]{
 		Value: value,
-		Prev:  d.lastNode,
-		Next:  nil,
+		Prev:  d.tail,
 	}
 
-	d.lastNode = d.lastNode.Next
-
-	d.length++
+	d.tail.Next = n
+	d.tail = n
+	d.len++
 }
 
-func (d *DoubleLinkedList) Prepend(value any) {
-	if d.firstNode == nil && d.lastNode == nil {
-		d.firstNode = &Node{
-			Value: value,
-			Prev:  nil,
-			Next:  nil,
-		}
-		d.lastNode = d.firstNode
-		d.length++
+func (d *DoubleLinkedList[T]) Prepend(value T) {
+	if d.head == nil && d.tail == nil {
+		d.initFirst(value)
 		return
 	}
 
-	d.firstNode.Prev = &Node{
+	n := &Node[T]{
 		Value: value,
 		Prev:  nil,
-		Next:  d.firstNode,
+		Next:  d.head,
 	}
 
-	d.firstNode = d.firstNode.Prev
-
-	d.length++
+	d.head.Prev = n
+	d.head = n
+	d.len++
 }
 
-func (d *DoubleLinkedList) Insert(index int, value any) {
-	if index < 0 || index > d.Len() {
-		return
+func (d *DoubleLinkedList[T]) Insert(index int, value T) error {
+	if index < 0 || index > d.len {
+		return ErrIndexOutOfRange
 	}
 
 	if index == 0 {
 		d.Prepend(value)
-		return
+		return nil
 	}
 
 	if index == d.Len() {
 		d.Append(value)
-		return
+		return nil
 	}
 
-	cur := d.firstNode
+	cur := d.head
 
 	for i := 0; i < index; i++ {
 		cur = cur.Next
 	}
 
-	now := &Node{
+	n := &Node[T]{
 		Value: value,
 		Prev:  cur.Prev,
 		Next:  cur,
 	}
 
-	cur.Prev.Next = now
-	cur.Prev = now
+	cur.Prev.Next = n
+	cur.Prev = n
 
-	d.length++
+	d.len++
+	return nil
 }
 
-func (d *DoubleLinkedList) Delete(value any) {
-	cur := d.firstNode
+func (d *DoubleLinkedList[T]) Delete(value T) {
+	cur := d.head
 
 	for cur != nil {
 		if cur.Value == value {
@@ -101,18 +102,20 @@ func (d *DoubleLinkedList) Delete(value any) {
 	}
 
 	if d.Len() == 1 {
-		d.firstNode = nil
-		d.lastNode = nil
-		d.length--
+		d.head = nil
+		d.tail = nil
+		d.len--
 		return
 	}
 
-	if cur == d.firstNode {
-		d.firstNode = cur.Next
+	if cur == d.head {
+		d.head = cur.Next
+		d.head.Prev = nil
 	}
 
-	if cur == d.lastNode {
-		d.lastNode = cur.Prev
+	if cur == d.tail {
+		d.tail = cur.Prev
+		d.tail.Next = nil
 	}
 
 	if cur.Prev != nil {
@@ -123,11 +126,11 @@ func (d *DoubleLinkedList) Delete(value any) {
 		cur.Next.Prev = cur.Prev
 	}
 
-	d.length--
+	d.len--
 }
 
-func (d *DoubleLinkedList) Find(value any) int {
-	cur := d.firstNode
+func (d *DoubleLinkedList[T]) Find(value T) int {
+	cur := d.head
 
 	i := 0
 	for cur != nil {
@@ -140,19 +143,15 @@ func (d *DoubleLinkedList) Find(value any) int {
 	return -1
 }
 
-func (d *DoubleLinkedList) Len() int {
-	return d.length
+func (d *DoubleLinkedList[T]) Len() int {
+	return d.len
 }
 
-func New() (dl DoubleLinkedList) {
-	return DoubleLinkedList{}
-}
-
-func (d *DoubleLinkedList) Iterator() (ch chan any) {
+func (d *DoubleLinkedList[T]) Iterator() (ch chan any) {
 	ch = make(chan any)
 
-	go func(d *DoubleLinkedList) {
-		cur := d.firstNode
+	go func(d *DoubleLinkedList[T]) {
+		cur := d.head
 
 		for cur != nil {
 			ch <- cur.Value
@@ -162,4 +161,8 @@ func (d *DoubleLinkedList) Iterator() (ch chan any) {
 	}(d)
 
 	return ch
+}
+
+func New[T comparable]() (dl DoubleLinkedList[T]) {
+	return DoubleLinkedList[T]{}
 }

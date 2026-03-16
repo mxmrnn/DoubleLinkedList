@@ -1,7 +1,7 @@
 package dlist
 
-type Node struct {
-	Value any
-	Prev  *Node
-	Next  *Node
+type Node[T comparable] struct {
+	Value T
+	Prev  *Node[T]
+	Next  *Node[T]
 }
